@@ -1,0 +1,81 @@
+name: CI — Validação de Código
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  lint-and-validate:
+    name: Lint & Validação de Sintaxe
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar ferramentas de análise estática
+        run: |
+          pip install pyflakes
+
+      - name: Verificar sintaxe — generate_dataset.py
+        run: python -m py_compile generate_dataset.py && echo "✅ generate_dataset.py OK"
+
+      - name: Verificar sintaxe — train.py
+        run: python -m py_compile train.py && echo "✅ train.py OK"
+
+      - name: Validar hiperparâmetros obrigatórios (LoRA + Otimizador)
+        run: |
+          python - <<'EOF'
+          import sys
+
+          with open("train.py") as f:
+              code = f.read()
+
+          required = {
+              "r=64"               : "LoRA rank",
+              "lora_alpha=16"      : "LoRA alpha",
+              "lora_dropout=0.1"   : "LoRA dropout",
+              "paged_adamw_32bit"  : "Otimizador paginado",
+              "cosine"             : "LR scheduler cosine",
+              "warmup_ratio=0.03"  : "Warmup ratio",
+              "nf4"                : "Quantização NF4",
+              "float16"            : "Compute dtype float16",
+              "CAUSAL_LM"          : "Task type",
+              "save_pretrained"    : "Salvamento do adaptador",
+              "SFTTrainer"         : "Trainer supervisionado",
+          }
+
+          failed = [label for token, label in required.items() if token not in code]
+
+          if failed:
+              print("❌ Hiperparâmetros obrigatórios ausentes:")
+              for f in failed:
+                  print(f"   • {f}")
+              sys.exit(1)
+
+          print("✅ Todos os hiperparâmetros obrigatórios presentes.")
+          EOF
+
+      - name: Validar formato do dataset de exemplo
+        run: |
+          python - <<'EOF'
+          import json, sys
+
+          for path in ["data/train.jsonl", "data/test.jsonl"]:
+              with open(path) as f:
+                  lines = [l.strip() for l in f if l.strip()]
+              for i, line in enumerate(lines, 1):
+                  record = json.loads(line)
+                  for field in ("prompt", "response", "text"):
+                      if field not in record:
+                          print(f"❌ {path} linha {i}: campo '{field}' ausente")
+                          sys.exit(1)
+              print(f"✅ {path} — {len(lines)} registro(s) válido(s)")
+          EOF
