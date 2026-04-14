@@ -1,6 +1,6 @@
 # 🦙 Lab 07 — Especialização de LLMs com LoRA e QLoRA
 
-[![CI](https://github.com/<seu-usuario>/lab07-qlora/actions/workflows/ci.yml/badge.svg)](https://github.com/<seu-usuario>/lab07-qlora/actions/workflows/ci.yml)
+[![CI](https://github.com/lcsp14/lab07-qlora/actions/workflows/ci.yml/badge.svg)](https://github.com/<seu-usuario>/lab07-qlora/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Release](https://img.shields.io/badge/release-v1.0-orange)
